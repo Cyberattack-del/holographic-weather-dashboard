@@ -2,8 +2,6 @@ import React from "react";
 import "../styles/WeatherDisplay.css"; 
 
 const WeatherDisplay = ({ weather }) => {
-  console.log("Weather Data in Display:", weather); // Debugging log
-
   if (!weather) return <p>Loading weather data...</p>;
 
   const { main, weather: weatherDetails, name } = weather;
@@ -12,18 +10,19 @@ const WeatherDisplay = ({ weather }) => {
   const humidity = main?.humidity || "N/A";
   const weatherType = weatherDetails?.[0]?.main || "Default";
 
+  // Function to get weather icon
   const getWeatherIcon = (type) => {
     switch (type) {
       case "Clear":
-        return "/images/sun-holo.jpg";
+        return "/image/sun-holo.jpg";
       case "Clouds":
-        return "/images/clouds-holo.jpg";
+        return "/image/clouds-holo.jpg";
       case "Rain":
-        return "/images/rain-holo.jpg";
+        return "/image/rain-holo.jpg";
       case "Snow":
-        return "/images/snow-holo.png";
+        return "/image/snow-holo.png";
       default:
-        return "/images/default-holo.png";
+        return "/image/default-holo.png";
     }
   };
 

@@ -1,93 +1,72 @@
-import { Canvas, useThree } from "@react-three/fiber";
-import { Stars, OrbitControls } from "@react-three/drei";
-import { TextureLoader } from "three";
-import { useLoader } from "@react-three/fiber";
+import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { useRef, useState } from "react";
 
-const HologramEarth = () => {
-  // Load textures
-  const earthTexture = useLoader(TextureLoader, "/image/clouds-holo.jpg");
-  const bumpMap = useLoader(TextureLoader, "/image/rain-holo.jpg");
-  const glowTexture = useLoader(TextureLoader, "/image/sun-holo.jpg");
+const HologramEffect = () => {
+  const mountRef = useRef(null);
+  const requestRef = useRef(null); // Animation frame reference
+  const rendererRef = useRef(null); // Store renderer reference
 
-  const canvasRef = useRef();
-  const [screenshot, setScreenshot] = useState(null);
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return; // Prevent errors if mountRef is null
 
-  // Function to capture a screenshot
-  const captureScreenshot = () => {
-    if (!canvasRef.current) return;
-    const gl = canvasRef.current.gl;
-    const canvas = gl.domElement;
-    const dataURL = canvas.toDataURL("image/png");
-    setScreenshot(dataURL);
-  };
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    
+    // Create a WebGL renderer and store it in the ref
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(window.innerWidth * 0.9, window.innerHeight * 0.9);
+    mount.appendChild(renderer.domElement);
+    rendererRef.current = renderer; // Save renderer instance
 
-  return (
-    <div style={{ textAlign: "center" }}>
-      <Canvas
-        ref={canvasRef}
-        camera={{ position: [0, 0, 3] }}
-        gl={{ preserveDrawingBuffer: true }} // Fix screenshot capture
-        style={{ width: "100%", height: "100vh", display: "block" }} // Fix aspect ratio
-      >
-        {/* Background Effects */}
-        <Stars radius={150} depth={50} count={5000} factor={4} fade />
+    // Create a single rotating globe with a BLUE wireframe outline
+    const geometry = new THREE.SphereGeometry(2, 32, 32);
+    const material = new THREE.MeshBasicMaterial({
+      color: "cyan",       // Inner fill color
+      wireframe: true,      // Enable wireframe mode
+      wireframeLinewidth: 2, // (Doesn't work in WebGL, but keeping for reference)
+    });
 
-        {/* Lighting */}
-        <ambientLight intensity={0.5} />
-        <pointLight position={[5, 5, 5]} intensity={1.5} />
+    const globe = new THREE.Mesh(geometry, material);
+    scene.add(globe);
 
-        {/* Earth Sphere */}
-        <mesh rotation={[0, 0, 0]}>
-          <sphereGeometry args={[1.5, 32, 32]} /> {/* Corrected sphere shape */}
-          <meshStandardMaterial map={earthTexture} bumpMap={bumpMap} bumpScale={0.05} />
-        </mesh>
+    // Create an extra wireframe with blue outline
+    const wireframeMaterial = new THREE.MeshBasicMaterial({
+      color: "blue",        // Blue outline
+      wireframe: true,
+    });
 
-        {/* Holographic Glow Effect */}
-        <mesh scale={1.6}>
-          <sphereGeometry args={[1.5, 32, 32]} />
-          <meshBasicMaterial
-            map={glowTexture}
-            blending={THREE.AdditiveBlending}
-            side={THREE.BackSide}
-            opacity={0.3}
-            transparent
-            color={"#00FFFF"}
-          />
-        </mesh>
+    const wireframeGlobe = new THREE.Mesh(geometry, wireframeMaterial);
+    scene.add(wireframeGlobe);
 
-        {/* Camera Controls */}
-        <OrbitControls
-          autoRotate
-          autoRotateSpeed={0.5}
-          enableZoom={false}
-          minPolarAngle={Math.PI / 3}
-          maxPolarAngle={Math.PI / 1.5}
-        />
-      </Canvas>
+    // Add lighting
+    const light = new THREE.PointLight("white", 1);
+    light.position.set(5, 5, 5);
+    scene.add(light);
 
-      {/* Capture Screenshot Button */}
-      <button
-        onClick={captureScreenshot}
-        style={{ marginTop: "20px", padding: "10px 20px", fontSize: "16px" }}
-      >
-        Capture Screenshot
-      </button>
+    camera.position.z = 5;
 
-      {/* Display the Captured Image */}
-      {screenshot && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Captured Screenshot:</h3>
-          <img
-            src={screenshot}
-            alt="Captured Earth Hologram"
-            style={{ width: "300px", border: "2px solid #00FFFF" }}
-          />
-        </div>
-      )}
-    </div>
-  );
+    // Animation loop
+    const animate = () => {
+      globe.rotation.y += 0.005;
+      wireframeGlobe.rotation.y += 0.005; // Ensure both rotate together
+      renderer.render(scene, camera);
+      requestRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+    // Cleanup function to properly dispose of renderer and prevent duplicate instances
+    return () => {
+      cancelAnimationFrame(requestRef.current); // Stop animation
+      if (rendererRef.current) {
+        rendererRef.current.dispose(); // Dispose renderer safely
+        if (mount.contains(rendererRef.current.domElement)) {
+          mount.removeChild(rendererRef.current.domElement);
+        }
+      }
+    };
+  }, []);
+
+  return <div ref={mountRef} />;
 };
 
-export default HologramEarth;
+export default HologramEffect;
