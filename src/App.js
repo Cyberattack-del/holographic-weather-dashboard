@@ -4,7 +4,7 @@ import WeatherDisplay from "./components/WeatherDisplay";
 //import HologramWeather from "./components/HologramEffect";
 import "./styles.css";
 import HologramEffect from "./components/HologramEffect";
-//import VoiceControl from "./components/VoiceControl";
+//.import VoiceControl from "./components/VoiceControl";
 //import AIWeatherInsights from "./components/AIWeatherInsights";
 
 const API_KEY = "04d0508e5f755e1deb3c5f6cfaff4b55"; // Replace with your API Key
